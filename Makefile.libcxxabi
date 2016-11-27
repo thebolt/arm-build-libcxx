@@ -1,0 +1,93 @@
+# Require make >= 3.81 (note that MAKE_VERSION is empty < 3.69).
+ifneq ($(and $(MAKE_VERSION),$(firstword $(sort $(MAKE_VERSION) 3.81))),3.81)
+$(error Make >= 3.81 required)
+endif
+
+# Disable all builtin rules.
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+# Enable secondary expansion.
+.SECONDEXPANSION:
+
+# Directories
+LIBCXXDIR := src/libcxx
+LIBCXXABIDIR := src/libcxxabi
+LIBUNWINDDIR := src/libunwind
+
+NEWLIBINC := ../../install/arm-none-eabi/include ../../install/lib/gcc/arm-none-eabi/6.2.0/include/ ../../install/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+
+SRCDIR := $(LIBCXXABIDIR)/src
+INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC)
+OBJDIR := obj/libcxxabi
+LIBDIR := lib
+
+# Source lists
+CSRC :=
+CXXSRC := abort_message.cpp \
+		cxa_aux_runtime.cpp \
+		cxa_default_handlers.cpp \
+		cxa_demangle.cpp \
+		cxa_exception_storage.cpp \
+		cxa_guard.cpp \
+		cxa_handlers.cpp \
+		cxa_new_delete.cpp \
+		cxa_unexpected.cpp \
+		cxa_vector.cpp \
+		cxa_virtual.cpp \
+		exception.cpp \
+		private_typeinfo.cpp \
+		stdexcept.cpp \
+		typeinfo.cpp \
+		cxa_exception.cpp \
+		cxa_personality.cpp
+ASMSRC :=
+SRC := $(CSRC) $(CXXSRC) $(ASMSRC)
+OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
+
+# Target
+TARGET := libcxxabi.a
+
+# Build tools
+AR := arm-none-eabi-ar
+CC := arm-none-eabi-gcc
+CXX := arm-none-eabi-g++
+
+VPATH = $(SRCDIR)
+
+# Build settings
+MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
+
+DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -D_LIBCPP_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1
+INCS := $(addprefix -I,$(INCDIR))
+OPT := -Os -g
+WARN := -Wall
+
+CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffunction-sections -nostdinc
+CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c++11 -ffunction-sections -nostdinc
+
+# Targets
+$(LIBDIR)/$(TARGET): $(OBJS) | $(LIBDIR)
+	$(AR) -rcs $@ $^
+
+clean:
+	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET)
+
+# Helpers
+$(LIBDIR):
+	@mkdir -p $@
+
+$(OBJDIR):
+	@mkdir -p $@
+
+$(OBJS): | $(OBJDIR)
+
+# Rules
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.S
+	$(CC) $(CFLAGS) -c $< -o $@

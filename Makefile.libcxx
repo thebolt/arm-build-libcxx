@@ -1,0 +1,124 @@
+# Require make >= 3.81 (note that MAKE_VERSION is empty < 3.69).
+ifneq ($(and $(MAKE_VERSION),$(firstword $(sort $(MAKE_VERSION) 3.81))),3.81)
+$(error Make >= 3.81 required)
+endif
+
+# Disable all builtin rules.
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+# Enable secondary expansion.
+.SECONDEXPANSION:
+
+# Directories
+PREFIX ?= ../../install/arm-none-eabi/
+
+LIBCXXDIR := src/libcxx
+LIBCXXABIDIR := src/libcxxabi
+LIBUNWINDDIR := src/libunwind
+
+NEWLIBINC := ../../install/arm-none-eabi/include ../../install/lib/gcc/arm-none-eabi/6.2.0/include/ ../../install/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+
+SRCDIR := $(LIBCXXDIR)/src
+INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC) $(SRCDIR)
+OBJDIR := obj/libcxx
+LIBDIR := lib
+
+TO_PATCH := system_error.cpp
+PATCHED := $(addprefix patch_dir/patched_, $(TO_PATCH))
+
+# Source lists
+CSRC :=
+CXXSRC := $(filter-out $(TO_PATCH), $(notdir $(wildcard $(SRCDIR)/*.cpp)))
+ASMSRC :=
+SRC := $(CSRC) $(CXXSRC) $(ASMSRC) $(notdir $(PATCHED))
+OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
+
+WILDCARD_FILTER = $(addprefix $(dir $1), $(filter-out $2, $(notdir $(sort $(wildcard $1)))))
+IFILES_IGN := CMakeLists.txt __config __config_site.in support
+IFILES := $(call WILDCARD_FILTER,$(LIBCXXDIR)/include/*,$(IFILES_IGN)) \
+	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/experimental/*,$(IFILES_IGN)) \
+	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/ext/*,$(IFILES_IGN))
+
+# Target
+TARGET := libcxx.a
+
+# Build tools
+AR := arm-none-eabi-ar
+CC := arm-none-eabi-gcc
+CXX := arm-none-eabi-g++
+
+VPATH = $(SRCDIR):patch_dir
+
+# Build settings
+MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
+
+DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1 -D_POSIX_TIMERS=1 -D_GNU_SOURCE=1
+INCS := $(addprefix -I,$(INCDIR)) -include $(OBJDIR)/__config_site
+OPT := -Os -g
+WARN := -Wall
+
+CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffunction-sections -nostdinc
+CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=gnu++11 -ffunction-sections -nostdinc -nostdinc++
+
+# Targets
+$(LIBDIR)/$(TARGET): $(OBJS) | $(OBJDIR)/__config_site $(LIBDIR) $(PATCHED)
+	$(AR) -rcs $@ $^
+
+clean:
+	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET) patch_dir
+.PHONY: clean
+
+# Helpers
+$(LIBDIR):
+	@mkdir -p $@
+
+$(OBJDIR):
+	@mkdir -p $@
+
+$(OBJS): | $(OBJDIR) $(OBJDIR)/__config_site
+
+# Rules
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.S
+	$(CC) $(CFLAGS) -c $< -o $@
+
+patch_dir/patched_%.cpp : %.cpp $(wildcard patch/*)
+	@mkdir -p $(dir $@)
+	patch $< patch/$(addsuffix .patch,$(notdir $<)) -o $@
+
+install: $(LIBDIR)/$(TARGET) $(OBJDIR)/__gen_config
+	@test -d $(PREFIX) || mkdir -p $(PREFIX)
+	install -m 0644 $(LIBDIR)/$(TARGET) $(PREFIX)/lib
+	$(foreach inc,$(IFILES),install -m 0644 -D $(inc) $(subst $(LIBCXXDIR)/include,$(PREFIX)/include/c++/v1/, $(inc));)
+	install -m 0644 $(OBJDIR)/__gen_config $(PREFIX)/include/c++/v1/__config
+
+$(OBJDIR)/__config_site:
+	@echo "#ifndef _LIBCPP_CONFIG_SITE" > $@
+	@echo "#define _LIBCPP_CONFIG_SITE" >> $@
+	@echo "#define _LIBCPP_ABI_VERSION 1" >> $@
+	@echo "#undef _LIBCPP_ABI_UNSTABLE" >> $@
+	@echo "#define _LIBCPP_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE" >> $@
+	@echo "#undef _LIBCPP_HAS_NO_STDIN" >> $@
+	@echo "#undef _LIBCPP_HAS_NO_STDOUT" >> $@
+	@echo "#define _LIBCPP_HAS_NO_THREADS" >> $@
+	@echo "#define _LIBCPP_HAS_NO_MONOTONIC_CLOCK" >> $@
+	@echo "#define _LIBCPP_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS" >> $@
+	@echo "#undef _LIBCPP_HAS_MUSL_LIBC" >> $@
+	@echo "#undef _LIBCPP_HAS_THREAD_API_PTHREAD" >> $@
+	@echo "#endif // _LIBCPP_CONFIG_SITE" >> $@
+
+
+$(OBJDIR)/__gen_config: $(OBJDIR)/__config_site
+	@cat $< > $@
+	@cat $(LIBCXXDIR)/include/__config >> $@
+
+.PHONY: install
+
+e:
+	@echo $(IFILES)

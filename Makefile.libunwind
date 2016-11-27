@@ -1,0 +1,80 @@
+# Require make >= 3.81 (note that MAKE_VERSION is empty < 3.69).
+ifneq ($(and $(MAKE_VERSION),$(firstword $(sort $(MAKE_VERSION) 3.81))),3.81)
+$(error Make >= 3.81 required)
+endif
+
+# Disable all builtin rules.
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+# Enable secondary expansion.
+.SECONDEXPANSION:
+
+# Directories
+LIBUNWINDDIR := src/libunwind
+LIBCXXDIR := src/libcxx
+
+NEWLIBINC := ../../install/arm-none-eabi/include ../../install/lib/gcc/arm-none-eabi/6.2.0/include/ ../../install/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+
+SRCDIR := $(LIBUNWINDDIR)/src
+INCDIR := include_override $(LIBUNWINDDIR)/include $(LIBCXXDIR)/include $(NEWLIBINC)
+OBJDIR := obj/libunwind
+LIBDIR := lib
+
+# Source lists
+CSRC := UnwindLevel1.c \
+		UnwindLevel1-gcc-ext.c \
+		Unwind-sjlj.c
+CXXSRC := libunwind.cpp \
+			Unwind-EHABI.cpp
+ASMSRC := UnwindRegistersRestore.S \
+			UnwindRegistersSave.S
+SRC := $(CSRC) $(CXXSRC) $(ASMSRC)
+OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
+
+# Target
+TARGET := libunwind.a
+
+# Build tools
+AR := arm-none-eabi-ar
+CC := arm-none-eabi-gcc
+CXX := arm-none-eabi-g++
+
+VPATH = $(SRCDIR)
+
+# Build settings
+MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
+
+DEFS := -D_LIBUNWIND_IS_BAREMETAL=1 -D_LIBUNWIND_IS_NATIVE_ONLY=1 -DNDEBUG -D_LIBCPP_HAS_NO_THREADS=1
+INCS := $(addprefix -I,$(INCDIR))
+OPT := -Os -g
+WARN := -Wall
+
+CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffunction-sections -nostdinc
+CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c++11 -ffunction-sections -nostdinc
+
+# Targets
+$(LIBDIR)/$(TARGET): $(OBJS) | $(LIBDIR)
+	$(AR) -rcs $@ $^
+
+clean:
+	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET)
+
+# Helpers
+$(LIBDIR):
+	@mkdir -p $@
+
+$(OBJDIR):
+	@mkdir -p $@
+
+$(OBJS): | $(OBJDIR)
+
+# Rules
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o : %.S
+	$(CC) $(CFLAGS) -c $< -o $@
