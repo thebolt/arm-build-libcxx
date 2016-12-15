@@ -95,9 +95,9 @@ patch_dir/patched_%.cpp : %.cpp $(wildcard patch/*)
 
 install: $(LIBDIR)/$(TARGET) $(OBJDIR)/__gen_config
 	@test -d $(PREFIX) || mkdir -p $(PREFIX)
-	install -m 0644 $(LIBDIR)/$(TARGET) $(PREFIX)/lib
-	$(foreach inc,$(IFILES),install -m 0644 -D $(inc) $(subst $(LIBCXXDIR)/include,$(PREFIX)/include/c++/v1/, $(inc));)
-	install -m 0644 $(OBJDIR)/__gen_config $(PREFIX)/include/c++/v1/__config
+	install -m 0644 $(LIBDIR)/$(TARGET) $(PREFIX)/arm-none-eabi/lib
+	$(foreach inc,$(IFILES),install -m 0644 -D $(inc) $(subst $(LIBCXXDIR)/include,$(PREFIX)/arm-none-eabi/include/c++/v1/, $(inc));)
+	install -m 0644 $(OBJDIR)/__gen_config $(PREFIX)/arm-none-eabi/include/c++/v1/__config
 
 $(OBJDIR)/__config_site:
 	@echo "#ifndef _LIBCPP_CONFIG_SITE" > $@
