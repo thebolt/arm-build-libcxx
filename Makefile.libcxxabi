@@ -11,11 +11,13 @@ MAKEFLAGS += --no-builtin-rules
 .SECONDEXPANSION:
 
 # Directories
+PREFIX ?= /opt/ia-toolchain
+
 LIBCXXDIR := src/libcxx
 LIBCXXABIDIR := src/libcxxabi
 LIBUNWINDDIR := src/libunwind
 
-NEWLIBINC := ../../install/arm-none-eabi/include ../../install/lib/gcc/arm-none-eabi/6.2.0/include/ ../../install/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
 
 SRCDIR := $(LIBCXXABIDIR)/src
 INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC)
@@ -67,6 +69,8 @@ CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffun
 CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c++11 -ffunction-sections -nostdinc
 
 # Targets
+all: $(LIBDIR)/$(TARGET)
+
 $(LIBDIR)/$(TARGET): $(OBJS) | $(LIBDIR)
 	$(AR) -rcs $@ $^
 
@@ -91,3 +95,9 @@ $(OBJDIR)/%.o : %.cpp
 
 $(OBJDIR)/%.o : %.S
 	$(CC) $(CFLAGS) -c $< -o $@
+
+install: $(LIBDIR)/$(TARGET)
+	@test -d $(PREFIX) || mkdir -p $(PREFIX)
+	install -m 0644 $(LIBDIR)/$(TARGET) $(PREFIX)/arm-none-eabi/lib
+
+.PHONY: all clean install

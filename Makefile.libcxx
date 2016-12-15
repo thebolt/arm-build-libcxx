@@ -11,13 +11,13 @@ MAKEFLAGS += --no-builtin-rules
 .SECONDEXPANSION:
 
 # Directories
-PREFIX ?= ../../install/arm-none-eabi/
+PREFIX ?= /opt/ia-toolchain
 
 LIBCXXDIR := src/libcxx
 LIBCXXABIDIR := src/libcxxabi
 LIBUNWINDDIR := src/libunwind
 
-NEWLIBINC := ../../install/arm-none-eabi/include ../../install/lib/gcc/arm-none-eabi/6.2.0/include/ ../../install/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
 
 SRCDIR := $(LIBCXXDIR)/src
 INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC) $(SRCDIR)
@@ -62,12 +62,13 @@ CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffun
 CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=gnu++11 -ffunction-sections -nostdinc -nostdinc++
 
 # Targets
+all: $(LIBDIR)/$(TARGET)
+
 $(LIBDIR)/$(TARGET): $(OBJS) | $(OBJDIR)/__config_site $(LIBDIR) $(PATCHED)
 	$(AR) -rcs $@ $^
 
 clean:
 	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET) patch_dir
-.PHONY: clean
 
 # Helpers
 $(LIBDIR):
@@ -118,7 +119,4 @@ $(OBJDIR)/__gen_config: $(OBJDIR)/__config_site
 	@cat $< > $@
 	@cat $(LIBCXXDIR)/include/__config >> $@
 
-.PHONY: install
-
-e:
-	@echo $(IFILES)
+.PHONY: all clean install
