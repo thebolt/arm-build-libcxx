@@ -1,0 +1,21 @@
+diff --git a/src/UnwindRegistersSave.S b/src/UnwindRegistersSave.S
+index 4860e8f..1eed276 100644
+--- a/src/UnwindRegistersSave.S
++++ b/src/UnwindRegistersSave.S
+@@ -9,6 +9,7 @@
+ 
+ #include "assembly.h"
+ 
++    .syntax unified
+     .text
+ 
+ #if defined(__i386__)
+@@ -300,7 +301,7 @@ DEFINE_LIBUNWIND_FUNCTION(unw_getcontext)
+ @
+ @ On entry:
+ @  thread_state pointer is in r0
+-@ 
++@
+ @ Per EHABI #4.7 this only saves the core integer registers.
+ @ EHABI #7.4.5 notes that in general all VRS registers should be restored
+ @ however this is very hard to do for VFP registers because it is unknown

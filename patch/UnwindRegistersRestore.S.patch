@@ -1,0 +1,12 @@
+diff --git a/src/UnwindRegistersRestore.S b/src/UnwindRegistersRestore.S
+index 408ba03..f1521b2 100644
+--- a/src/UnwindRegistersRestore.S
++++ b/src/UnwindRegistersRestore.S
+@@ -9,6 +9,7 @@
+ 
+ #include "assembly.h"
+ 
++  .syntax unified
+   .text
+ 
+ #if defined(__i386__)

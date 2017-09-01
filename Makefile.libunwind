@@ -23,6 +23,9 @@ INCDIR := include_override $(LIBUNWINDDIR)/include $(LIBCXXDIR)/include $(NEWLIB
 OBJDIR := obj/libunwind
 LIBDIR := lib
 
+TO_PATCH := UnwindRegistersRestore.S UnwindRegistersSave.S
+PATCHED := $(addprefix patch_dir/patched_, $(TO_PATCH))
+
 # Source lists
 CSRC := UnwindLevel1.c \
 		UnwindLevel1-gcc-ext.c \
@@ -31,7 +34,7 @@ CXXSRC := libunwind.cpp \
 			Unwind-EHABI.cpp
 ASMSRC := UnwindRegistersRestore.S \
 			UnwindRegistersSave.S
-SRC := $(CSRC) $(CXXSRC) $(ASMSRC)
+SRC := $(filter-out $(TO_PATCH), $(CSRC) $(CXXSRC) $(ASMSRC)) $(PATCHED)
 OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
 
 # Target
@@ -42,7 +45,7 @@ AR := arm-none-eabi-ar
 CC := arm-none-eabi-gcc
 CXX := arm-none-eabi-g++
 
-VPATH = $(SRCDIR)
+VPATH = $(SRCDIR):patch_dir
 
 # Build settings
 MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
@@ -54,6 +57,7 @@ WARN := -Wall
 
 CFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c99 -ffunction-sections -nostdinc
 CXXFLAGS := $(WARN) $(OPT) $(INCS) $(DEFS) $(MCUFLAGS) -fno-builtin -std=c++11 -ffunction-sections -nostdinc
+AFLAGS = -I$(SRCDIR)
 
 # Targets
 all: $(LIBDIR)/$(TARGET)
@@ -75,13 +79,28 @@ $(OBJS): | $(OBJDIR)
 
 # Rules
 $(OBJDIR)/%.o : %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o : %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o : %.S
-	$(CC) $(CFLAGS) -c $< -o $@
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(AFLAGS) -c $< -o $@
+
+patch_dir/patched_%.c : %.c $(wildcard patch/*)
+	@mkdir -p $(dir $@)
+	patch $< patch/$(addsuffix .patch,$(notdir $<)) -o $@
+
+patch_dir/patched_%.cpp : %.cpp $(wildcard patch/*)
+	@mkdir -p $(dir $@)
+	patch $< patch/$(addsuffix .patch,$(notdir $<)) -o $@
+
+patch_dir/patched_%.S : %.S $(wildcard patch/*)
+	@mkdir -p $(dir $@)
+	patch $< patch/$(addsuffix .patch,$(notdir $<)) -o $@
 
 install: $(LIBDIR)/$(TARGET)
 	@test -d $(PREFIX) || mkdir -p $(PREFIX)

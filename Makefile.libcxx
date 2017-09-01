@@ -24,7 +24,7 @@ INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIB
 OBJDIR := obj/libcxx
 LIBDIR := lib
 
-TO_PATCH := system_error.cpp
+TO_PATCH :=
 PATCHED := $(addprefix patch_dir/patched_, $(TO_PATCH))
 
 # Source lists
@@ -53,7 +53,7 @@ VPATH = $(SRCDIR):patch_dir
 # Build settings
 MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding -fno-exceptions
 
-DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1 -D_POSIX_TIMERS=1 -D_GNU_SOURCE=1 -D_LIBCPP_NO_EXCEPTIONS
+DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1 -D_POSIX_TIMERS=1 -D_GNU_SOURCE=1 -D_LIBCPP_NO_EXCEPTIONS -D_LIBCPP_BUILDING_LIBRARY
 INCS := $(addprefix -I,$(INCDIR)) -include $(OBJDIR)/__config_site
 OPT := -Os -g
 WARN := -Wall
