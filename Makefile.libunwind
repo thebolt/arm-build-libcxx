@@ -16,7 +16,7 @@ PREFIX ?= /opt/ia-toolchain
 LIBUNWINDDIR := src/libunwind
 LIBCXXDIR := src/libcxx
 
-NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/7.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/7.2.0/include-fixed/
 
 SRCDIR := $(LIBUNWINDDIR)/src
 INCDIR := include_override $(LIBUNWINDDIR)/include $(LIBCXXDIR)/include $(NEWLIBINC)

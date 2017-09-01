@@ -17,7 +17,7 @@ LIBCXXDIR := src/libcxx
 LIBCXXABIDIR := src/libcxxabi
 LIBUNWINDDIR := src/libunwind
 
-NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/6.2.0/include-fixed/
+NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/7.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/7.2.0/include-fixed/
 
 SRCDIR := $(LIBCXXDIR)/src
 INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC) $(SRCDIR)
@@ -35,8 +35,11 @@ SRC := $(CSRC) $(CXXSRC) $(ASMSRC) $(notdir $(PATCHED))
 OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
 
 WILDCARD_FILTER = $(addprefix $(dir $1), $(filter-out $2, $(notdir $(sort $(wildcard $1)))))
-IFILES_IGN := CMakeLists.txt __config __config_site.in support
+IFILES_IGN := CMakeLists.txt __config __config_site.in
 IFILES := $(call WILDCARD_FILTER,$(LIBCXXDIR)/include/*,$(IFILES_IGN)) \
+	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/support/*,$(IFILES_IGN)) \
+	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/support/newlib/*,$(IFILES_IGN)) \
+	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/support/xlocale/*,$(IFILES_IGN)) \
 	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/experimental/*,$(IFILES_IGN)) \
 	$(call WILDCARD_FILTER,$(LIBCXXDIR)/include/ext/*,$(IFILES_IGN))
 
@@ -68,7 +71,7 @@ $(LIBDIR)/$(TARGET): $(OBJS) | $(OBJDIR)/__config_site $(LIBDIR) $(PATCHED)
 	$(AR) -rcs $@ $^
 
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET) patch_dir
+	rm -rf $(OBJDIR) $(LIBDIR)/$(TARGET)
 
 # Helpers
 $(LIBDIR):
