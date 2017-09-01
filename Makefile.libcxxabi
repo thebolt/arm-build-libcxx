@@ -41,8 +41,9 @@ CXXSRC := abort_message.cpp \
 		private_typeinfo.cpp \
 		stdexcept.cpp \
 		typeinfo.cpp \
-		cxa_exception.cpp \
-		cxa_personality.cpp
+		cxa_noexception.cpp
+		# cxa_exception.cpp \
+		# cxa_personality.cpp
 ASMSRC :=
 SRC := $(CSRC) $(CXXSRC) $(ASMSRC)
 OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(basename $(SRC))))
@@ -58,9 +59,9 @@ CXX := arm-none-eabi-g++
 VPATH = $(SRCDIR)
 
 # Build settings
-MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
+MCUFLAGS := -mcpu=cortex-m4 -mthumb -mlittle-endian -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding -fno-exceptions
 
-DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -D_LIBCPP_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1
+DEFS := -DLIBCXXABI_HAS_NO_THREADS=1 -D_LIBCPP_HAS_NO_THREADS=1 -DLIBCXXABI_USE_LLVM_UNWINDER=1 -DLIBCXXABI_BAREMETAL=1 -D_LIBCXXABI_NO_EXCEPTIONS=1
 INCS := $(addprefix -I,$(INCDIR))
 OPT := -Os -g
 WARN := -Wall
