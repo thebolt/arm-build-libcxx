@@ -17,7 +17,7 @@ LIBCXXDIR := src/libcxx
 LIBCXXABIDIR := src/libcxxabi
 LIBUNWINDDIR := src/libunwind
 
-NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/8.2.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/8.2.0/include-fixed/
+NEWLIBINC := $(PREFIX)/arm-none-eabi/include $(PREFIX)/lib/gcc/arm-none-eabi/10.3.0/include/ $(PREFIX)/lib/gcc/arm-none-eabi/10.3.0/include-fixed/
 
 SRCDIR := $(LIBCXXABIDIR)/src
 INCDIR := include_override $(LIBCXXABIDIR)/include $(LIBUNWINDDIR)/include $(LIBUNWINDDIR)/src $(LIBCXXDIR)/include $(NEWLIBINC)
